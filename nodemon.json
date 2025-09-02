@@ -1,0 +1,6 @@
+{
+  "watch": ["expressium", "src", ".env", "swagger.yml"],
+  "ignore": [],
+  "ext": "*",
+  "exec": "node --loader ts-node/esm src/index.ts"
+}
