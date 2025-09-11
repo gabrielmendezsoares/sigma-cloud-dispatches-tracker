@@ -8,8 +8,8 @@ This core execution logic is responsible for fetching operational data, analyzin
 
 The system is designed to be run on a schedule, ensuring continuous surveillance of dispatch activity across environments.
 
-### 🎯 Objectives
-
+### 🎯 Objectives 
+ 
 - Automate the monitoring of dispatch volumes across companies and accounts
 - Compare dispatch activity against a fixed threshold within a defined time window (default: 4 dispatches over 3 days)
 - Generate and send alarm events to external systems (Segware) when thresholds are exceeded
