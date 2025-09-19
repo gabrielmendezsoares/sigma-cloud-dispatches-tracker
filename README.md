@@ -2,22 +2,27 @@
 
 ## 📋 Overview
 
-Sigma Cloud Dispatches Tracker is an automated monitoring and alerting system designed to track dispatch activity across integrated external platforms, such as Segware. The system periodically retrieves recent dispatch data for all registered companies and accounts, evaluates the volume of activity against predefined thresholds, and sends alerts when excessive dispatches are detected.
+Sigma Cloud Dispatches Tracker is a scheduled monitoring job designed to detect excessive dispatch activity reported by Segware. It operates on a 3-day rolling window, retrieving dispatch records from all companies via the Segware API. The service analyzes each account's total number of dispatches and flags accounts that exceed a configurable threshold.
 
-This core execution logic is responsible for fetching operational data, analyzing patterns based on business rules, and triggering structured alarm events when necessary. To prevent redundant alerts, the system persists trigger states per account and updates them only when thresholds are exceeded. All alerts and their statuses (sent or failed) are logged in a central database to ensure reliability, traceability, and recovery in case of failure.
+Once a threshold breach is detected, the system enriches the data with account, company, and client group metadata from Segware APIs. Alerts are sent through WhatsApp and also injected into the Segware alarm system for centralized visibility. The system tracks active alerts in a trigger table to prevent repeated notifications and automatically clears alerts when dispatch volume normalizes.
 
-The system is designed to be run on a schedule, ensuring continuous surveillance of dispatch activity across environments.
+This service plays a critical role in identifying accounts that may be misconfigured or experiencing abnormal security activity, helping operational teams act swiftly and proactively.
 
 ### 🎯 Objectives 
  
-- Automate the monitoring of dispatch volumes across companies and accounts
-- Compare dispatch activity against a fixed threshold within a defined time window (default: 4 dispatches over 3 days)
-- Generate and send alarm events to external systems (Segware) when thresholds are exceeded
-- Persist event and trigger data to prevent redundant or duplicate alerts
-- Maintain historical log of all alert attempts, including both successful and failed transmissions
-- Enable reliable, repeatable executions using scheduled jobs or background workers
-- Handle API and system-level errors gracefully and log them for observability
-- Ensure seamless integration with Segware’s API through authenticated requests and structured data handling
+- Monitor dispatch activity over a rolling 3-day period
+- Fetch dispatches for all companies using the Segware API
+- Filter and aggregate dispatches per account
+- Calculate the total number of dispatches across all types per account
+- Detect when total dispatches exceed the defined threshold
+- Track alert state per account to avoid duplicate notifications
+- Clear alerts when dispatch volumes return to normal
+- Enrich alert data with account, company, and client group metadata
+- Send alert notifications via WhatsApp using the ChatPro API
+- Inject dispatch-related alerts into the Segware alarm system
+- Persist alerts and metadata in internal logging tables
+- Log all operations and errors for auditability and diagnostics
+- Run as a recurring background job suitable for scheduled execution
 
 --- 
 
