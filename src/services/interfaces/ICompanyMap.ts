@@ -1,1 +1,4 @@
-export interface ICompanyMap { id: number; }
+export interface ICompanyMap {
+  id: number;
+  tradeName: string;
+}
