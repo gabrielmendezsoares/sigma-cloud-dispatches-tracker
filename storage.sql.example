@@ -95,9 +95,9 @@ CREATE TABLE `sigma_cloud_dispatches_tracker_registers` (
     `trade_name` VARCHAR(255) NOT NULL,
     `company_trade_name` VARCHAR(255) NOT NULL,
     `client_group_name` VARCHAR(255) NOT NULL,
-    `code` VARCHAR(255) NOT NULL,
-    `period` VARCHAR(255) NOT NULL,
     `quantity` INT UNSIGNED NOT NULL,
+    `period_started_at` TIMESTAMP NOT NULL,
+    `period_ended_at` TIMESTAMP NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -107,26 +107,24 @@ CREATE TABLE `sigma_cloud_dispatches_tracker_registers` (
     INDEX `idx_trade_name` (`trade_name`),
     INDEX `idx_company_trade_name` (`company_trade_name`),
     INDEX `idx_client_group_name` (`client_group_name`),
-    INDEX `idx_code` (`code`),
-    INDEX `idx_period` (`period`),
     INDEX `idx_quantity` (`quantity`),
+    INDEX `idx_period_started_at` (`period_started_at`),
+    INDEX `idx_period_ended_at` (`period_ended_at`),
     INDEX `idx_created_at` (`created_at`),
     INDEX `idx_updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `sigma_cloud_dispatches_tracker_triggers` (
     `id` INT NOT NULL AUTO_INCREMENT,
-    `account_id` INT UNSIGNED NOT NULL,
-    `code` VARCHAR(255) NOT NULL,
+    `account_id` INT UNSIGNED NOT NULL UNIQUE,
+    `quantity` INT UNSIGNED NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
 	
-	UNIQUE KEY `unique_account_id_code` (`account_id`, `code`),
-    
     INDEX `idx_account_id` (`account_id`),
-    INDEX `idx_code` (`code`),
+    INDEX `idx_quantity` (`quantity`),
     INDEX `idx_created_at` (`created_at`),
     INDEX `idx_updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
