@@ -434,9 +434,11 @@ model sigma_cloud_events_tracker_registers {
   trade_name         String   @db.VarChar(255)
   company_trade_name String   @db.VarChar(255)
   client_group_name  String   @db.VarChar(255)
+  cuc                String   @db.VarChar(255)
   code               String   @db.VarChar(255)
-  period             String   @db.VarChar(255)
   quantity           Int      @db.UnsignedInt
+  period_started_at  DateTime @db.Timestamp(0)
+  period_ended_at    DateTime @db.Timestamp(0)
   created_at         DateTime @default(now()) @db.Timestamp(0)
   updated_at         DateTime @default(now()) @db.Timestamp(0)
 
@@ -445,10 +447,12 @@ model sigma_cloud_events_tracker_registers {
   @@index([code], map: "idx_code")
   @@index([company_trade_name], map: "idx_company_trade_name")
   @@index([created_at], map: "idx_created_at")
-  @@index([period], map: "idx_period")
   @@index([quantity], map: "idx_quantity")
   @@index([trade_name], map: "idx_trade_name")
   @@index([updated_at], map: "idx_updated_at")
+  @@index([period_ended_at], map: "idx_period_ended_at")
+  @@index([period_started_at], map: "idx_period_started_at")
+  @@index([cuc], map: "idx_cuc")
 }
 
 model sigma_cloud_events_tracker_triggers {
@@ -484,8 +488,9 @@ model sigma_cloud_dispatches_tracker_registers {
   trade_name         String   @db.VarChar(255)
   company_trade_name String   @db.VarChar(255)
   client_group_name  String   @db.VarChar(255)
-  period             String   @db.VarChar(255)
   quantity           Int      @db.UnsignedInt
+  period_started_at  DateTime @db.Timestamp(0)
+  period_ended_at    DateTime @db.Timestamp(0)
   created_at         DateTime @default(now()) @db.Timestamp(0)
   updated_at         DateTime @default(now()) @db.Timestamp(0)
 
@@ -493,10 +498,11 @@ model sigma_cloud_dispatches_tracker_registers {
   @@index([client_group_name], map: "idx_client_group_name")
   @@index([company_trade_name], map: "idx_company_trade_name")
   @@index([created_at], map: "idx_created_at")
-  @@index([period], map: "idx_period")
   @@index([quantity], map: "idx_quantity")
   @@index([trade_name], map: "idx_trade_name")
   @@index([updated_at], map: "idx_updated_at")
+  @@index([period_ended_at], map: "idx_period_ended_at")
+  @@index([period_started_at], map: "idx_period_started_at")
 }
 
 model sigma_cloud_dispatches_tracker_window {

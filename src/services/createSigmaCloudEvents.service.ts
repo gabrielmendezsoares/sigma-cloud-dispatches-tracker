@@ -4,7 +4,9 @@ import { HttpClientUtil, loggerUtil, BearerStrategy } from '../../expressium/ind
 import { IAccountMap, IClientGroupMap, ICompanyMap, IDispatchMap } from './interfaces/index.js';
 
 const DISPATCHES_PERIOD_DAYS = 3;
-const DISPATCHES_COUNT_THRESHOLD = 4;
+const DISPATCHES_PERIOD_MILLISECONDS = momentTimezone.duration(DISPATCHES_PERIOD_DAYS, 'days').asMilliseconds();
+const DISPATCHES_COUNT_THRESHOLD = 3;
+const ACCOUNT_TRADE_NAME_LENGTH = 14;
 const AUXILIARY = '0';
 const EVENT_CODE = 'E701';
 const EVENT_ID = '167629000';
@@ -13,30 +15,30 @@ const PROTOCOL_TYPE = 'CONTACT_ID';
 
 const prisma = new PrismaClient();
 
-export const createSigmaCloudEvents = async (): Promise<void> => {
-  const sigmaCloudHttpClientInstance = new HttpClientUtil.HttpClient();
-
-  sigmaCloudHttpClientInstance.setAuthenticationStrategy(new BearerStrategy.BearerStrategy(process.env.SIGMA_CLOUD_BEARER_TOKEN as string));
-  
+export const createSigmaCloudEvents = async (): Promise<void> => {  
   try {
-    const databaseNow: [{ date: Date }] = await prisma.$queryRaw`SELECT NOW() AS date;`;
-    
     let sigmaCloudDispatchesTrackerWindow = await prisma.sigma_cloud_dispatches_tracker_window.findFirst();
 
-    if (!sigmaCloudDispatchesTrackerWindow || momentTimezone.utc(databaseNow[0].date).isAfter(momentTimezone.utc(sigmaCloudDispatchesTrackerWindow.started_at).add(DISPATCHES_PERIOD_DAYS, 'days')))  {
+    if (!sigmaCloudDispatchesTrackerWindow || momentTimezone.utc().isAfter(momentTimezone.utc(sigmaCloudDispatchesTrackerWindow.started_at).add(DISPATCHES_PERIOD_MILLISECONDS, 'milliseconds')))  {
       await prisma.sigma_cloud_dispatches_tracker_window.deleteMany();
       
-      sigmaCloudDispatchesTrackerWindow = await prisma.sigma_cloud_dispatches_tracker_window.create({});
+      sigmaCloudDispatchesTrackerWindow = await prisma.sigma_cloud_dispatches_tracker_window.create({ data: { id: 1 } });
     }
 
     await prisma.sigma_cloud_dispatches_tracker_triggers.deleteMany({ where: { updated_at: { lt: sigmaCloudDispatchesTrackerWindow.created_at } } });
 
+    const sigmaCloudHttpClientInstance = new HttpClientUtil.HttpClient();
+
+    sigmaCloudHttpClientInstance.setAuthenticationStrategy(new BearerStrategy.BearerStrategy(process.env.SIGMA_CLOUD_BEARER_TOKEN as string));
+
     const companyMapList = await sigmaCloudHttpClientInstance.get<ICompanyMap.ICompanyMap[]>('https://api.segware.com.br/v1/companies');
-    const startDate = momentTimezone.utc(sigmaCloudDispatchesTrackerWindow.created_at);
-    const endDate = momentTimezone.utc(sigmaCloudDispatchesTrackerWindow.created_at).add(DISPATCHES_PERIOD_DAYS, 'days');
-    const whatsAppHttpClientInstance = new HttpClientUtil.HttpClient();
+    const startDate = momentTimezone.utc(sigmaCloudDispatchesTrackerWindow.created_at).subtract(3, 'hours');
+    const endDate = momentTimezone.utc(sigmaCloudDispatchesTrackerWindow.created_at).subtract(3, 'hours').add(DISPATCHES_PERIOD_MILLISECONDS, 'milliseconds');
+    const startDateToDate = startDate.toDate();
     const startDateFormattation = startDate.clone().format('YYYY-MM-DD HH:mm:ss');
+    const endDateToDate = endDate.toDate();
     const endDateFormattation = endDate.clone().format('YYYY-MM-DD HH:mm:ss');
+    const whatsAppHttpClientInstance = new HttpClientUtil.HttpClient();
 
     Promise.allSettled(
       companyMapList.data.map(
@@ -93,12 +95,26 @@ export const createSigmaCloudEvents = async (): Promise<void> => {
                   const clientGroupMap = clientGroupMapList.find((clientGroupMap: IClientGroupMap.IClientGroupMap): boolean => clientGroupMap.id === accountMapClientGroupId);
                   const clientGroupMapName = clientGroupMap?.name || 'Vazio';
 
+                  await prisma.sigma_cloud_dispatches_tracker_registers.create(
+                    {
+                      data: {
+                        account_code: accountMapAccountCode,
+                        trade_name: accountMapTradeName,
+                        company_trade_name: companyMapTradeName,
+                        client_group_name: clientGroupMapName,
+                        quantity: count,
+                        period_started_at: startDateToDate,
+                        period_ended_at: endDateToDate
+                      }
+                    }
+                  );
+
                   try {
                     await whatsAppHttpClientInstance.post<unknown>(
                       `https://v5.chatpro.com.br/${ process.env.CHAT_PRO_INSTANCE_ID }/api/v1/send_message`,
-                      { 
+                      {
                         number: process.env.CHAT_PRO_GROUP_JID as string,
-                        message: `⚠️EXCESSO DE DESLOCAMENTOS⚠️\n\nConta: ${ accountMapAccountCode }\nNome: ${ accountMapTradeName }\nEmpresa: ${ companyMapTradeName }\nGrupo: ${ clientGroupMapName }\nPeríodo: ${ startDateFormattation } -> ${ endDateFormattation }\nQuantidade: ${ count }`
+                        message: `⚠️ *EXCESSO DE PERCURSOS* ⚠️\n\n*Conta:* ${ accountMapAccountCode }\n*Nome:* ${ accountMapTradeName.length >= ACCOUNT_TRADE_NAME_LENGTH ? accountMapTradeName.slice(0, ACCOUNT_TRADE_NAME_LENGTH).trimEnd() + '...' : accountMapTradeName }\n*Empresa:* ${ companyMapTradeName }\n*Grupo:* ${ clientGroupMapName }\n*Quantidade:* ${ count }\n*Período Inicial:* ${ startDateFormattation }\n*Período Final:* ${ endDateFormattation }`
                       },
                       {
                         headers: { Authorization: process.env.CHAT_PRO_BEARER_TOKEN },
@@ -115,13 +131,13 @@ export const createSigmaCloudEvents = async (): Promise<void> => {
                       { 
                         events: [
                           {
-                            account: accountMap.accountCode,
+                            account: accountMapAccountCode,
                             auxiliary: AUXILIARY,
                             code: EVENT_CODE,
-                            companyId: accountMap.companyId,
-                            complement: `Advertência: Excesso de deslocamentos detectado, Período: ${ startDateFormattation } -> ${ endDateFormattation }, Quantidade: ${ count }`,
+                            companyId: accountMapCompanyId,
+                            complement: `Advertência: Excesso de deslocamentos detectado, Quantidade: ${ count }, Período Inicial: ${ startDateFormattation }, Período Final: ${ endDateFormattation }`,
                             eventId: EVENT_ID,
-                            eventLog: `Advertência: Excesso de deslocamentos detectado, Período: ${ startDateFormattation } -> ${ endDateFormattation }, Quantidade: ${ count }`,
+                            eventLog: `Advertência: Excesso de deslocamentos detectado, Quantidade: ${ count }, Período Inicial: ${ startDateFormattation }, Período Final: ${ endDateFormattation }`,
                             partition: PARTITION,
                             protocolType: PROTOCOL_TYPE
                           }
@@ -137,25 +153,12 @@ export const createSigmaCloudEvents = async (): Promise<void> => {
                           auxiliary: AUXILIARY,
                           code: EVENT_CODE,
                           company_id: accountMapCompanyId,
-                          complement: `Advertência: Excesso de deslocamentos detectado, Período: ${ startDateFormattation } -> ${ endDateFormattation }, Quantidade: ${ count }`,
+                          complement: `Advertência: Excesso de deslocamentos detectado, Quantidade: ${ count }, Período Inicial: ${ startDateFormattation }, Período Final: ${ endDateFormattation }`,
                           event_id: EVENT_ID,
-                          event_log: `Advertência: Excesso de deslocamentos detectado, Período: ${ startDateFormattation } -> ${ endDateFormattation }, Quantidade: ${ count }`,
+                          event_log: `Advertência: Excesso de deslocamentos detectado, Quantidade: ${ count }, Período Inicial: ${ startDateFormattation }, Período Final: ${ endDateFormattation }`,
                           partition: PARTITION,
                           protocol_type: PROTOCOL_TYPE,
                           status: 'sent'
-                        }
-                      }
-                    );
-
-                    await prisma.sigma_cloud_dispatches_tracker_registers.create(
-                      {
-                        data: {
-                          account_code: accountMapAccountCode,
-                          trade_name: accountMapTradeName,
-                          company_trade_name: companyMapTradeName,
-                          client_group_name: clientGroupMapName,
-                          period: `${ startDateFormattation } -> ${ endDateFormattation }`,
-                          quantity: count
                         }
                       }
                     );
@@ -170,9 +173,9 @@ export const createSigmaCloudEvents = async (): Promise<void> => {
                           auxiliary: AUXILIARY,
                           code: EVENT_CODE,
                           company_id: accountMapCompanyId,
-                          complement: `Advertência: Excesso de deslocamentos detectado, Período: ${ startDateFormattation } -> ${ endDateFormattation }, Quantidade: ${ count }`,
+                          complement: `Advertência: Excesso de deslocamentos detectado, Quantidade: ${ count }, Período Inicial: ${ startDateFormattation }, Período Final: ${ endDateFormattation }`,
                           event_id: EVENT_ID,
-                          event_log: `Advertência: Excesso de deslocamentos detectado, Período: ${ startDateFormattation } -> ${ endDateFormattation }, Quantidade: ${ count }`,
+                          event_log: `Advertência: Excesso de deslocamentos detectado, Quantidade: ${ count }, Período Inicial: ${ startDateFormattation }, Período Final: ${ endDateFormattation }`,
                           partition: PARTITION,
                           protocol_type: PROTOCOL_TYPE,
                           status: 'failed'
