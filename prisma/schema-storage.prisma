@@ -245,16 +245,19 @@ model api_gateway_apis {
 }
 
 model fence_tracker_triggers {
-  id         Int      @id @default(autoincrement())
-  key        String   @unique(map: "key") @db.VarChar(255)
-  quantity   Int
-  created_at DateTime @default(now()) @db.DateTime(0)
-  updated_at DateTime @default(now()) @db.DateTime(0)
+  id           Int      @id @default(autoincrement())
+  account_code String   @db.VarChar(255)
+  zone_name    String   @db.VarChar(255)
+  quantity     Int      @db.UnsignedInt
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+  updated_at   DateTime @default(now()) @db.Timestamp(0)
 
+  @@unique([account_code, zone_name], map: "unique_account_code_zone_name")
   @@index([created_at], map: "idx_created_at")
-  @@index([key], map: "idx_key")
   @@index([quantity], map: "idx_quantity")
   @@index([updated_at], map: "idx_updated_at")
+  @@index([account_code], map: "idx_account_code")
+  @@index([zone_name], map: "idx_zone_name")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -514,4 +517,27 @@ model sigma_cloud_dispatches_tracker_window {
   @@index([created_at], map: "idx_created_at")
   @@index([started_at], map: "idx_started_at")
   @@index([updated_at], map: "idx_updated_at")
+}
+
+model fence_tracker_registers {
+  id                Int      @id @default(autoincrement())
+  account_code      String   @db.VarChar(255)
+  condominium       String   @db.VarChar(255)
+  cabinet           String   @db.VarChar(255)
+  zone_name         String   @db.VarChar(255)
+  quantity          Int      @db.UnsignedInt
+  period_started_at DateTime @db.Timestamp(0)
+  period_ended_at   DateTime @db.Timestamp(0)
+  created_at        DateTime @default(now()) @db.Timestamp(0)
+  updated_at        DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([account_code], map: "idx_account_code")
+  @@index([cabinet], map: "idx_cabinet")
+  @@index([condominium], map: "idx_condominium")
+  @@index([created_at], map: "idx_created_at")
+  @@index([period_ended_at], map: "idx_period_ended_at")
+  @@index([period_started_at], map: "idx_period_started_at")
+  @@index([quantity], map: "idx_quantity")
+  @@index([updated_at], map: "idx_updated_at")
+  @@index([zone_name], map: "idx_zone_name")
 }
