@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-Sigma Cloud Dispatches Tracker is a scheduled monitoring job designed to detect excessive dispatch activity reported by Segware. It operates on a 3-day rolling window, retrieving dispatch records from all companies via the Segware API. The service analyzes each account's total number of dispatches and flags accounts that exceed a configurable threshold.
+Sigma Cloud Dispatches Tracker is a scheduled monitoring job designed to detect excessive dispatch activity reported by Segware. It operates on a 2-day rolling window, retrieving dispatch records from all companies via the Segware API. The service analyzes each account's total number of dispatches and flags accounts that exceed a configurable threshold.
 
 Once a threshold breach is detected, the system enriches the data with account, company, and client group metadata from Segware APIs. Alerts are sent through WhatsApp and also injected into the Segware alarm system for centralized visibility. The system tracks active alerts in a trigger table to prevent repeated notifications and automatically clears alerts when dispatch volume normalizes.
 
@@ -10,7 +10,7 @@ This service plays a critical role in identifying accounts that may be misconfig
 
 ### 🎯 Objectives 
  
-- Monitor dispatch activity over a rolling 3-day period
+- Monitor dispatch activity over a rolling 2-day period
 - Fetch dispatches for all companies using the Segware API
 - Filter and aggregate dispatches per account
 - Calculate the total number of dispatches across all types per account

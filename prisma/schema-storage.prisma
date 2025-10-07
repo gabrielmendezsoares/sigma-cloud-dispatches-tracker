@@ -244,22 +244,6 @@ model api_gateway_apis {
   @@index([url], map: "idx_url")
 }
 
-model fence_tracker_triggers {
-  id           Int      @id @default(autoincrement())
-  account_code String   @db.VarChar(255)
-  zone_name    String   @db.VarChar(255)
-  quantity     Int      @db.UnsignedInt
-  created_at   DateTime @default(now()) @db.Timestamp(0)
-  updated_at   DateTime @default(now()) @db.Timestamp(0)
-
-  @@unique([account_code, zone_name], map: "unique_account_code_zone_name")
-  @@index([created_at], map: "idx_created_at")
-  @@index([quantity], map: "idx_quantity")
-  @@index([updated_at], map: "idx_updated_at")
-  @@index([account_code], map: "idx_account_code")
-  @@index([zone_name], map: "idx_zone_name")
-}
-
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model query_gateway_queries {
   id                            Int       @id @default(autoincrement())
@@ -531,6 +515,7 @@ model fence_tracker_registers {
   created_at        DateTime @default(now()) @db.Timestamp(0)
   updated_at        DateTime @default(now()) @db.Timestamp(0)
 
+  @@unique([account_code, zone_name, period_started_at, period_ended_at], map: "unique_account_code_zone_name_period_started_at_period_ended_at")
   @@index([account_code], map: "idx_account_code")
   @@index([cabinet], map: "idx_cabinet")
   @@index([condominium], map: "idx_condominium")
